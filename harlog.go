@@ -49,6 +49,14 @@ func (proxy *ProxyHttpServer) harLogAggregator() {
 			}
 
 			proxy.harLog = har.New() // reset
+		case memory := <-proxy.HarFlushToMemory:
+			proxy.Logf("Received HAR flush request to memory")
+			if len(proxy.harLog.Log.Entries) == 0 {
+				proxy.Logf("No HAR entries to flush")
+				memory <- nil
+				continue
+			}
+			memory <-proxy.harLog
 		}
 
 	}
@@ -114,6 +122,10 @@ func copyReadCloser(readCloser io.ReadCloser, len int64) (io.ReadCloser, io.Read
 //
 // LogToHARFile alwasy returns `NEXT`.
 func (ctx *ProxyCtx) LogToHARFile(captureContent bool) Next {
+	return ctx.LogToHAR(captureContent)
+}
+
+func (ctx *ProxyCtx) LogToHAR(captureContent bool) Next {
 	ctx.proxy.harFlusherRunOnce.Do(func() {
 		go ctx.proxy.harLogAggregator()
 	})
@@ -124,8 +136,19 @@ func (ctx *ProxyCtx) LogToHARFile(captureContent bool) Next {
 	return NEXT
 }
 
+func (ctx *ProxyCtx) GetHar(filename string) {
+	ctx.proxy.FlushHARToDisk(filename)
+}
+
 func (ctx *ProxyCtx) FlushHARToDisk(filename string) {
 	ctx.proxy.FlushHARToDisk(filename)
+}
+
+func (proxy *ProxyHttpServer) FlushHARMemory() (*har.Har){
+	proxy.Logf("Calling a flush of HAR to memory")
+	harMemory := make(chan *har.Har)
+	proxy.HarFlushToMemory <- harMemory
+	return <- harMemory
 }
 
 func (proxy *ProxyHttpServer) FlushHARToDisk(filename string) {
