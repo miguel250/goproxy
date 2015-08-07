@@ -53,7 +53,6 @@ func (proxy *ProxyHttpServer) harLogAggregator() {
 			proxy.Logf("Received HAR flush request to memory")
 			if len(proxy.harLog.Log.Entries) == 0 {
 				proxy.Logf("No HAR entries to flush")
-				memory <- nil
 				continue
 			}
 			memory <-proxy.harLog
@@ -144,11 +143,13 @@ func (ctx *ProxyCtx) FlushHARToDisk(filename string) {
 	ctx.proxy.FlushHARToDisk(filename)
 }
 
-func (proxy *ProxyHttpServer) FlushHARMemory() (*har.Har){
+func (proxy *ProxyHttpServer) FlushHARMemory() (chan *har.Har){
 	proxy.Logf("Calling a flush of HAR to memory")
 	harMemory := make(chan *har.Har)
+
 	proxy.HarFlushToMemory <- harMemory
-	return <- harMemory
+
+	return harMemory
 }
 
 func (proxy *ProxyHttpServer) FlushHARToDisk(filename string) {
