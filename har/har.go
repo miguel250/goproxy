@@ -198,7 +198,6 @@ func parsePostData(req *http.Request) *PostData {
 }
 
 func parseStringArrMap(stringArrMap map[string][]string) []NameValuePair {
-	index := 0
 	harQueryString := make([]NameValuePair, len(stringArrMap))
 	for k, v := range stringArrMap {
 		escapedKey, _ := url.QueryUnescape(k)
@@ -207,8 +206,7 @@ func parseStringArrMap(stringArrMap map[string][]string) []NameValuePair {
 			Name:  escapedKey,
 			Value: escapedValues,
 		}
-		harQueryString[index] = harNameValuePair
-		index++
+		harQueryString = append(harQueryString, harNameValuePair)
 	}
 	return harQueryString
 }
